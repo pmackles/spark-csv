@@ -144,13 +144,17 @@ abstract class AbstractCsvSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("DSL test for DROPMALFORMED parsing mode") {
+    val accum = sqlContext.sparkContext.accumulator(0L, "bingo!")
     val results = new CsvParser()
       .withParseMode(ParseModes.DROP_MALFORMED_MODE)
       .withUseHeader(true)
       .withParserLib(parserLib)
+      .withMalformedRecordAccum(accum)
       .csvFile(sqlContext, carsFile)
       .select("year")
       .collect()
+
+    System.err.println("!!!! accum: " + accum.value)
 
     assert(results.size === numCars - 1)
   }

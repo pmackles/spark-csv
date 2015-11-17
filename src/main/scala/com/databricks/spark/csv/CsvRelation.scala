@@ -17,6 +17,8 @@ package com.databricks.spark.csv
 
 import java.io.IOException
 
+import org.apache.spark.Accumulator
+
 import scala.collection.JavaConversions._
 import scala.util.control.NonFatal
 
@@ -45,7 +47,7 @@ case class CsvRelation protected[spark] (
     ignoreTrailingWhiteSpace: Boolean,
     treatEmptyValuesAsNulls: Boolean,
     userSchema: StructType = null,
-    inferCsvSchema: Boolean)(@transient val sqlContext: SQLContext)
+    inferCsvSchema: Boolean)(@transient val sqlContext: SQLContext, val accum: Accumulator[Long] = null)
   extends BaseRelation with TableScan with PrunedScan with InsertableRelation {
 
   /**
@@ -104,6 +106,7 @@ case class CsvRelation protected[spark] (
 
       if (dropMalformed && schemaFields.length != tokens.size) {
         logger.warn(s"Dropping malformed line: ${tokens.mkString(",")}")
+        Option(accum).map (_ +=1)
         None
       } else if (failFast && schemaFields.length != tokens.size) {
         throw new RuntimeException(s"Malformed line in FAILFAST mode: ${tokens.mkString(",")}")

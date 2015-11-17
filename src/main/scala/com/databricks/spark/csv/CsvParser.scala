@@ -16,6 +16,7 @@
 package com.databricks.spark.csv
 
 
+import org.apache.spark.Accumulator
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.sql.types.StructType
@@ -39,6 +40,12 @@ class CsvParser extends Serializable {
   private var parserLib: String = ParserLibs.DEFAULT
   private var charset: String = TextFile.DEFAULT_CHARSET.name()
   private var inferSchema: Boolean = false
+  private var accum: Accumulator[Long] = null
+
+  def withMalformedRecordAccum(accum: Accumulator[Long]): CsvParser = {
+    this.accum = accum
+    this
+  }
 
   def withUseHeader(flag: Boolean): CsvParser = {
     this.useHeader = flag
@@ -122,7 +129,7 @@ class CsvParser extends Serializable {
       ignoreTrailingWhiteSpace,
       treatEmptyValuesAsNulls,
       schema,
-      inferSchema)(sqlContext)
+      inferSchema)(sqlContext, accum)
     sqlContext.baseRelationToDataFrame(relation)
   }
 
